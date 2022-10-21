@@ -1,0 +1,18 @@
+name: SASjs Core Package Publish Tag
+on:
+  push:
+    branches:
+      - main
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Make Release
+        uses: alice-biometrics/release-creator/@v1.0.5
+        with:
+          github_token: ${{ secrets.GH_TOKEN }}
+          branch: main
+          draft: false
+          version: v4.43.0
+          description: 'Version v4.43.0 of sasjs/core is now on SAS PACKAGES :ok_hand:'
