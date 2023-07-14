@@ -147,9 +147,9 @@ run;
 
 %if %index(&libds,-)>0 and %scan(&libds,2,-)=FC %then %do;
   /* this is a format catalog - cannot query cols directly */
-  %let vlist="FMTNAME","START","END","LABEL","MIN","MAX","DEFAULT","LENGTH"
-    ,"FUZZ","PREFIX","MULT","FILL","NOEDIT","TYPE","SEXCL","EEXCL","HLO"
-    ,"DECSEP","DIG3SEP","DATATYPE","LANGUAGE";
+  %let vlist="TYPE","FMTNAME","FMTROW","START","END","LABEL","MIN","MAX"
+    ,"DEFAULT","LENGTH","FUZZ","PREFIX","MULT","FILL","NOEDIT","SEXCL"
+    ,"EEXCL","HLO","DECSEP","DIG3SEP","DATATYPE","LANGUAGE";
 %end;
 %else %let vlist=%mf_getvarlist(&libds,dlm=%str(,),quote=DOUBLE);
 
@@ -165,7 +165,7 @@ data &ds4;
   if upcase(&inds_auto)="&ds2" then tgtvar_type='N';
   else if upcase(&inds_auto)="&ds3" then tgtvar_type='C';
   else do;
-    putlog "%str(ERR)OR: unidentified vartype input!" &inds_auto;
+    putlog 'ERR' +(-1) "OR: unidentified vartype input!" &inds_auto;
     call symputx('syscc',98);
   end;
 
@@ -174,7 +174,7 @@ data &ds4;
   else if &inds_keep="&modds" then move_type='M';
   else if &inds_keep="&origds" then move_type='O';
   else do;
-    putlog "%str(ERR)OR: unidentified movetype input!" &inds_keep;
+    putlog 'ERR' +(-1) "OR: unidentified movetype input!" &inds_keep;
     call symputx('syscc',99);
   end;
   tgtvar_nm=upcase(tgtvar_nm);

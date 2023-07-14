@@ -25,6 +25,7 @@
   <h4> SAS Macros </h4>
   @li mddl_sas_cntlout.sas
   @li mf_getuniquename.sas
+  @li mp_aligndecimal.sas
 
   <h4> Related Macros </h4>
   @li mf_getvarformat.sas
@@ -57,25 +58,33 @@
 %end;
 
 proc format lib=&libcat cntlout=&cntlds;
-%if "&fmtlist" ne "0" %then %do;
+%if "&fmtlist" ne "0" and "&fmtlist" ne "" %then %do;
   select
-  %do i=1 %to %sysfunc(countw(&fmtlist));
+  %do i=1 %to %sysfunc(countw(&fmtlist,%str( )));
     %scan(&fmtlist,&i,%str( ))
   %end;
   ;
 %end;
 run;
 
-data &cntlout;
+data &cntlout/nonote2err;
   if 0 then set &ddlds;
   set &cntlds;
-  if type="N" then do;
-    start=cats(start);
-    end=cats(end);
+  by type fmtname notsorted;
+
+  /* align the numeric values to avoid overlapping ranges */
+  if type in ("I","N") then do;
+    %mp_aligndecimal(start,width=16)
+    %mp_aligndecimal(end,width=16)
   end;
+
+  /* create row marker. Data cannot be sorted without it! */
+  if first.fmtname then fmtrow=0;
+  fmtrow+1;
+
 run;
 proc sort;
-  by fmtname start;
+  by type fmtname fmtrow;
 run;
 
 proc sql;

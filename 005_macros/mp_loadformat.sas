@@ -34,10 +34,10 @@
   @param [in] mdebug= (0) Set to 1 to enable DEBUG messages and preserve outputs
 
   <h4> SAS Macros </h4>
-  @li mddl_sas_cntlout.sas
   @li mf_getuniquename.sas
   @li mf_nobs.sas
   @li mp_abort.sas
+  @li mp_aligndecimal.sas
   @li mp_cntlout.sas
   @li mp_lockanytable.sas
   @li mp_storediffs.sas
@@ -45,7 +45,8 @@
   <h4> Related Macros </h4>
   @li mddl_dc_difftable.sas
   @li mddl_dc_locktable.sas
-  @li mp_loadformat.test.sas
+  @li mp_loadformat.test.1.sas
+  @li mp_loadformat.test.2.sas
   @li mp_lockanytable.sas
   @li mp_stackdiffs.sas
 
@@ -67,7 +68,7 @@
 );
 /* set up local macro variables and temporary tables (with a prefix) */
 %local err msg prefix dslist i var fmtlist ibufsize;
-%let dslist=base_fmts template inlibds ds1 stagedata storediffs;
+%let dslist=base_fmts template inlibds ds1 stagedata storediffs del1 del2;
 %if &outds_add=0 %then %let dslist=&dslist outds_add;
 %if &outds_del=0 %then %let dslist=&dslist outds_del;
 %if &outds_mod=0 %then %let dslist=&dslist outds_mod;
@@ -77,13 +78,6 @@
   %local &var;
   %let &var=%upcase(&prefix._&var);
 %end;
-
-/*
-format values can be up to 32767 wide.  SQL joins on such a wide column can
-cause buffer issues.  Update ibufsize and reset at the end.
-*/
-%let ibufsize=%sysfunc(getoption(ibufsize));
-options ibufsize=32767 ;
 
 /* in DC, format catalogs maybe specified in the libds with a -FC extension */
 %let libcat=%scan(&libcat,1,-);
@@ -134,29 +128,62 @@ run;
   * First, extract only relevant formats from the catalog
   */
 proc sql noprint;
-select distinct upcase(fmtname) into: fmtlist separated by ' ' from &libds;
+select distinct
+  case
+    when type='N' then upcase(fmtname)
+    when type='C' then cats('$',upcase(fmtname))
+    when type='I' then cats('@',upcase(fmtname))
+    when type='J' then cats('@$',upcase(fmtname))
+    else "&sysmacroname:UNHANDLED"
+  end
+  into: fmtlist separated by ' '
+  from &libds;
 
 %mp_cntlout(libcat=&libcat,fmtlist=&fmtlist,cntlout=&base_fmts)
 
+/* get a hash of the row */
+%local cvars nvars;
+%let cvars=TYPE FMTNAME START END LABEL PREFIX FILL SEXCL EEXCL HLO DECSEP
+  DIG3SEP DATATYPE LANGUAGE;
+%let nvars=FMTROW MIN MAX DEFAULT LENGTH FUZZ MULT NOEDIT;
+data &base_fmts/note2err;
+  set &base_fmts;
+  fmthash=%mp_md5(cvars=&cvars, nvars=&nvars);
+run;
 
 /**
   * Ensure input table and base_formats have consistent lengths and types
   */
-%mddl_sas_cntlout(libds=&template)
-data &inlibds;
-  length &delete_col $3;
-  if 0 then set &template;
+data &inlibds/nonote2err;
+  length &delete_col $3 FMTROW 8 start end label $32767;
+  if 0 then set &base_fmts;
   set &libds;
+  by type fmtname notsorted;
   if &delete_col='' then &delete_col='No';
   fmtname=upcase(fmtname);
+  type=upcase(type);
   if missing(type) then do;
-    if substr(fmtname,1,1)='$' then type='C';
-    else type='N';
+    if substr(fmtname,1,1)='@' then do;
+      if substr(fmtname,2,1)='$' then type='J';
+      else type='I';
+    end;
+    else do;
+      if substr(fmtname,1,1)='$' then type='C';
+      else type='N';
+    end;
   end;
-  if type='N' then do;
-    start=cats(start);
-    end=cats(end);
+  if type in ('N','I') then do;
+    %mp_aligndecimal(start,width=16)
+    %mp_aligndecimal(end,width=16)
   end;
+
+  /* update row marker - retain new var as fmtrow may already be in libds */
+  if first.fmtname then row=1;
+  else row+1;
+  drop row;
+  fmtrow=row;
+
+  fmthash=%mp_md5(cvars=&cvars, nvars=&nvars);
 run;
 
 /**
@@ -167,23 +194,10 @@ create table &outds_add(drop=&delete_col) as
   select a.*
   from &inlibds a
   left join &base_fmts b
-  on a.fmtname=b.fmtname
-    and a.start=b.start
+  on a.type=b.type and a.fmtname=b.fmtname and a.fmtrow=b.fmtrow
   where b.fmtname is null
     and upcase(a.&delete_col) ne "YES"
-  order by fmtname, start;;
-
-/**
-  * Identify deleted records
-  */
-create table &outds_del(drop=&delete_col) as
-  select a.*
-  from &inlibds a
-  inner join &base_fmts b
-  on a.fmtname=b.fmtname
-    and a.start=b.start
-  where upcase(a.&delete_col)="YES"
-  order by fmtname, start;
+  order by type, fmtname, fmtrow;
 
 /**
   * Identify modified records
@@ -192,12 +206,40 @@ create table &outds_mod (drop=&delete_col) as
   select a.*
   from &inlibds a
   inner join &base_fmts b
-  on a.fmtname=b.fmtname
-    and a.start=b.start
+  on a.type=b.type and a.fmtname=b.fmtname and a.fmtrow=b.fmtrow
   where upcase(a.&delete_col) ne "YES"
-  order by fmtname, start;
+    and a.fmthash ne b.fmthash
+  order by type, fmtname, fmtrow;
 
-options ibufsize=&ibufsize;
+/**
+  * Identify deleted records
+  */
+create table &outds_del(drop=&delete_col) as
+  select a.*
+  from &inlibds a
+  inner join &base_fmts b
+  on a.type=b.type and a.fmtname=b.fmtname and a.fmtrow=b.fmtrow
+  where upcase(a.&delete_col)="YES"
+  order by type, fmtname, fmtrow;
+
+/**
+  * Identify fully deleted formats (where every record is removed)
+  * These require to be explicitly deleted in proc format
+  * del1 - identify _partial_ deletes
+  * del2 - exclude these, and also formats that come with _additions_
+  */
+create table &del1 as
+  select a.*
+  from &base_fmts a
+  left join &outds_del b
+  on a.type=b.type and a.fmtname=b.fmtname and a.fmtrow=b.fmtrow
+  where b.fmtrow is null;
+
+create table &del2 as
+  select * from &outds_del
+  where cats(type,fmtname) not in (select cats(type,fmtname) from &outds_add)
+    and cats(type,fmtname) not in (select cats(type,fmtname) from &del1);
+
 
 %mp_abort(
   iftrue=(&syscc ne 0)
@@ -206,19 +248,21 @@ options ibufsize=&ibufsize;
 )
 
 %if &loadtarget=YES %then %do;
+  /* new records plus base records that are not deleted or modified */
   data &ds1;
     merge &base_fmts(in=base)
       &outds_mod(in=mod)
       &outds_add(in=add)
       &outds_del(in=del);
     if not del and not mod;
-    by fmtname start;
+    by type fmtname fmtrow;
   run;
+  /* add back the modified records */
   data &stagedata;
     set &ds1 &outds_mod;
   run;
   proc sort;
-    by fmtname start;
+    by type fmtname fmtrow;
   run;
 %end;
 /* mp abort needs to run outside of conditional blocks */
@@ -228,7 +272,7 @@ options ibufsize=&ibufsize;
   ,msg=%str(SYSCC=&syscc prior to actual load)
 )
 %if &loadtarget=YES %then %do;
-  %if %mf_nobs(&stagedata)=0 %then %do;
+  %if %mf_nobs(&stagedata)=0 and %mf_nobs(&del2)=0 %then %do;
     %put There are no changes to load in &libcat!;
     %return;
   %end;
@@ -244,6 +288,22 @@ options ibufsize=&ibufsize;
   /* do the actual load */
   proc format lib=&libcat cntlin=&stagedata;
   run;
+  /* apply any full deletes */
+  %if %mf_nobs(&del2)>0 %then %do;
+    %local delfmtlist;
+    proc sql noprint;
+    select distinct case when type='N' then cats(fmtname,'.FORMAT')
+        when type='C' then cats(fmtname,'.FORMATC')
+        when type='J' then cats(fmtname,'.INFMTC')
+        when type='I' then cats(fmtname,'.INFMT')
+        else cats(fmtname,'.BADENTRY!!!') end
+      into: delfmtlist
+      separated by ' '
+      from &del2;
+    proc catalog catalog=&libcat;
+      delete &delfmtlist;
+    quit;
+  %end;
   %if &locklibds ne 0 %then %do;
     /* unlock the table */
     %mp_lockanytable(UNLOCK
@@ -266,7 +326,7 @@ options ibufsize=&ibufsize;
 
     %mp_storediffs(&libcat-FC
       ,&base_fmts
-      ,FMTNAME START
+      ,TYPE FMTNAME FMTROW
       ,delds=&outds_del
       ,modds=&outds_mod
       ,appds=&outds_add
