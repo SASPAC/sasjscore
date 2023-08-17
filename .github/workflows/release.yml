@@ -11,7 +11,7 @@ jobs:
       - name: Make Release
         uses: alice-biometrics/release-creator/@v1.0.5
         with:
-          github_token: ${{ secrets.GH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           branch: main
           draft: false
           version: 4.46.6
