@@ -44,7 +44,7 @@
   For more examples, see mp_chop.test.sas
 
   @param [in] infile The QUOTED path to the file on which to perform the chop
-  @param [in] matchvar= Macro variable NAME containing the string to split by
+  @param [in] matchvar= () Macro variable NAME containing the string to split by
   @param [in] matchpoint= (START) Valid values:
     @li START - chop at the beginning of the string in `matchvar`.
     @li END - chop at the end of the string in `matchvar`.
@@ -54,7 +54,8 @@
     @li FIRST - keep the section of the file before the chop
     @li LAST - keep the section of the file after the chop
   @param [in] mdebug= (0) Set to 1 to provide macro debugging
-  @param outfile= (0) Optional QUOTED path to the adjusted output file (avoids
+  @param [out] outfile= (0)
+    Optional QUOTED path to the adjusted output file (avoids
     overwriting the first file).
 
   <h4> SAS Macros </h4>

@@ -12,14 +12,12 @@
 
       %mm_getusers(user=&_metaperson)
 
-  @param outds the dataset to create that contains the list of libraries
-
   @returns outds  dataset containing all users, with the following columns:
     - uri
     - name
 
-  @param user= (0) Set to a metadata user to filter on that user
-  @param outds= (work.mm_getusers) The output table to create
+  @param [in] user= (0) Set to a metadata user to filter on that user
+  @param [out] outds= (work.mm_getusers) The output table to create
 
   @version 9.3
   @author Allan Bowe
