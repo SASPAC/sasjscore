@@ -69,8 +69,7 @@
 options noquotelenmax;
 %local base_uri; /* location of rest apis */
 %let base_uri=%mf_getplatform(VIYARESTAPI);
-
-%put &sysmacroname: fetching details for &path ;
+/* fetch the members of the folder to get the uri */
 %local fname1;
 %let fname1=%mf_getuniquefileref();
 proc http method='GET' out=&fname1 &oauth_bearer
@@ -90,7 +89,7 @@ run;
   )
 %end;
 
-%put &sysmacroname: grab the follow on link ;
+/* grab the follow on link */
 %local libref1;
 %let libref1=%mf_getuniquelibref();
 libname &libref1 JSON fileref=&fname1;
@@ -108,13 +107,15 @@ proc http method='GET' out=&fname1a &oauth_bearer
   headers "Authorization"="Bearer &&&access_token_var";
 %end;
 run;
-%put &=SYS_PROCHTTP_STATUS_CODE;
+%if &SYS_PROCHTTP_STATUS_CODE ne 200 %then %do;
+  %put &=sysmacroname &=SYS_PROCHTTP_STATUS_CODE &=SYS_PROCHTTP_STATUS_PHRASE;
+%end;
 %local libref1a;
 %let libref1a=%mf_getuniquelibref();
 libname &libref1a JSON fileref=&fname1a;
 %local uri found;
 %let found=0;
-%put Getting object uri from &libref1a..items;
+/* %put Getting object uri from &libref1a..items; */
 data _null_;
   length contenttype name $1000;
   set &libref1a..items;
@@ -140,7 +141,7 @@ run;
     ,msg=%str(&SYS_PROCHTTP_STATUS_CODE &SYS_PROCHTTP_STATUS_PHRASE)
   )
 %end;
-%else %put &sysmacroname: &path/&name successfully deleted;
+%else %put &sysmacroname: &path/&name deleted;
 
 /* clear refs */
 filename &fname1 clear;

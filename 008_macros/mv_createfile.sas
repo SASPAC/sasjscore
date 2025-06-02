@@ -17,6 +17,20 @@
       run;
       %mv_createfile(path=/Public/temp,name=newfile.txt,inref=myfile)
 
+  The macro also supports find & replace (used by the SASjs Streaming App
+  build program).  This allows one string to be replaced by another at the
+  point at which the file is created.  This is done by passing in the NAMES of
+  the macro variables containing the values to be swapped, eg:
+
+      filename fref temp;
+      data _null_;
+        file fref;
+        put 'whenever life gets you down, Mrs Brown..';
+      run;
+      %let f=Mrs Brown;
+      %let r=just remember that you're standing on a planet that's evolving;
+      %mv_createfile(path=/Public,name=life.md,inref=fref,fin,swap=f r)
+
 
   @param [in] path= The parent (SAS Drive) folder in which to create the file
   @param [in] name= The name of the file to be created
@@ -38,6 +52,8 @@
     @li sas_services
   @param [in] force= (YES) Will overwrite (delete / recreate) files by default.
     Set to NO to abort if a file already exists in that location.
+  @param pin] swap= (0) Provide two macro variable NAMES that contain the values
+    to be swapped, eg swap=find replace (see also the example above)
   @param [out] outds= (_null_) Output dataset with the uri of the new file
 
   @param [in] mdebug= (0) Set to 1 to enable DEBUG messages
@@ -51,6 +67,7 @@
   @li mfv_getpathuri.sas
   @li mp_abort.sas
   @li mp_base64copy.sas
+  @li mp_replace.sas
   @li mv_createfolder.sas
 
   <h4> Related Macros</h4>
@@ -69,6 +86,7 @@
     ,mdebug=0
     ,outds=_null_
     ,force=YES
+    ,swap=0
   );
 %local dbg;
 %if &mdebug=1 %then %do;
@@ -113,6 +131,12 @@
 %end;
 %else %put %str(ERR)OR: invalid value for intype: &intype;
 
+%if "&swap" ne "0" %then %do;
+  %mp_replace("%sysfunc(pathname(&fref))"
+    ,findvar=%scan(&swap,1,%str( ))
+    ,replacevar=%scan(&swap,2,%str( ))
+  )
+%end;
 
 %if &mdebug=1 %then %do;
   data _null_;
@@ -157,26 +181,28 @@ run;
   %end;
         "Accept"="*/*";
   run;
-  %put &sysmacroname DELETE &base_uri&fileuri
-    &=SYS_PROCHTTP_STATUS_CODE &=SYS_PROCHTTP_STATUS_PHRASE;
+  %put &sysmacroname DELETE &base_uri&fileuri;
+  %if &SYS_PROCHTTP_STATUS_CODE ne 204 %then %do;
+    %put &=SYS_PROCHTTP_STATUS_CODE &=SYS_PROCHTTP_STATUS_PHRASE;
+  %end;
 %end;
 
-%local url mimetype;
+%local url mimetype ext;
 %let url=&base_uri/files/files?parentFolderUri=&self_uri;
+%let ext=%upcase(%scan(&name,-1,.));
 
 /* fetch job info */
 %local fname1;
 %let fname1=%mf_getuniquefileref();
 proc http method='POST' out=&fname1 &oauth_bearer in=&fref
   %if "&ctype" = "0" %then %do;
-    %let mimetype=%mf_mimetype(%scan(&name,-1,.));
+    %let mimetype=%mf_mimetype(&ext);
     ct="&mimetype"
   %end;
   %else %do;
     ct="&ctype"
   %end;
-  %if "&mimetype"="text/html" or "&mimetype"="text/css"
-  or "&mimetype"="text/javascript" %then %do;
+  %if "&ext"="HTML" or "&ext"="CSS" or "&ext"="JS" or "&ext"="SVG" %then %do;
     url="&url%str(&)typeDefName=file";
   %end;
   %else %do;
@@ -187,9 +213,16 @@ proc http method='POST' out=&fname1 &oauth_bearer in=&fref
   %if &grant_type=authorization_code %then %do;
     "Authorization"="Bearer &&&access_token_var"
   %end;
-    "Content-Disposition"= "&contentdisp filename=""&name""; name=""&name"";";
+  "Content-Disposition"=
+  %if "&ext"="SVG" %then %do;
+    "filename=""&name"";"
+  %end;
+  %else %do;
+    "&contentdisp filename=""&name""; name=""&name"";"
+  %end;
+  ;
 run;
-%put &sysmacroname POST &=url
+%if &mdebug=1 %then %put &sysmacroname POST &=url
   &=SYS_PROCHTTP_STATUS_CODE &=SYS_PROCHTTP_STATUS_PHRASE;
 %mp_abort(iftrue=(&SYS_PROCHTTP_STATUS_CODE ne 201)
   ,mac=MV_CREATEFILE
@@ -198,7 +231,7 @@ run;
 %local libref2;
 %let libref2=%mf_getuniquelibref();
 libname &libref2 JSON fileref=&fname1;
-%put Grabbing the follow on link ;
+/* Grab the follow on link */
 data &outds;
   set &libref2..links end=last;
   if rel='createChild' then do;
@@ -207,9 +240,7 @@ data &outds;
   end;
 run;
 
-%put &sysmacroname: File &name successfully created:;%put;
-%put    &base_uri%mfv_getpathuri(&path/&name);%put;
+%put &sysmacroname: &name created at %mfv_getpathuri(&path/&name);%put;
 %put    &base_uri/SASJobExecution?_file=&path/&name;%put;
-%put &sysmacroname:;
 
 %mend mv_createfile;

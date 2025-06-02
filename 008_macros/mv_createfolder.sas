@@ -47,7 +47,7 @@
 %else %let dbg=*;
 
 %if %mfv_existfolder(&path)=1 %then %do;
-  %put &sysmacroname: &path already exists;
+  %&dbg.put &sysmacroname: &path already exists;
   data &outds;
     self_uri="%mfv_getpathuri(&path)";
     output;
@@ -164,8 +164,9 @@ options noquotelenmax;
                 'Content-Type'='application/vnd.sas.content.folder+json'
                 'Accept'='application/vnd.sas.content.folder+json';
     run;
-    %put &=SYS_PROCHTTP_STATUS_CODE;
-    %put &=SYS_PROCHTTP_STATUS_PHRASE;
+    %if &SYS_PROCHTTP_STATUS_CODE ne 200 %then %do;
+      %put &=SYS_PROCHTTP_STATUS_CODE &=SYS_PROCHTTP_STATUS_PHRASE;
+    %end;
     %mp_abort(iftrue=(&SYS_PROCHTTP_STATUS_CODE ne 201)
       ,mac=&sysmacroname
       ,msg=%str(&SYS_PROCHTTP_STATUS_CODE &SYS_PROCHTTP_STATUS_PHRASE)

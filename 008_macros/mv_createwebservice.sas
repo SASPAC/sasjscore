@@ -122,7 +122,7 @@ options noquotelenmax;
   %let path=%substr(&path,1,%length(&path)-1);
 
 /* ensure folder exists */
-%put &sysmacroname: Path &path being checked / created;
+%&dbg.put &sysmacroname: Path &path being checked / created;
 %mv_createfolder(path=&path)
 
 %local base_uri; /* location of rest apis */
@@ -955,12 +955,7 @@ run;
   libname &libref1 clear;
 %end;
 
-%put &sysmacroname: Job &name successfully created in &path;
-%put &sysmacroname:;
-%put &sysmacroname: Check it out here:;
-%put &sysmacroname:;%put;
-%put    &url/SASJobExecution?_PROGRAM=&path/&name;%put;
-%put &sysmacroname:;
-%put &sysmacroname:;
+%put &sysmacroname: Job &name created!  Check it out:;
+%put &url/SASJobExecution?_PROGRAM=&path/&name;
 
 %mend mv_createwebservice;
