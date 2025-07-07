@@ -33,16 +33,23 @@
     msg=Cannot enter mfv_existfolder.sas with syscc=&syscc
   )
 
-  %local fref rc;
+  %local fref rc var;
   %let fref=%mf_getuniquefileref();
 
   %if %sysfunc(filename(fref,,filesrvc,folderPath="&path"))=0 %then %do;
     1
+    %let var=_FILESRVC_&fref._URI;
     %let rc=%sysfunc(filename(fref));
+    %symdel &var;
   %end;
   %else %do;
     0
     %let syscc=0;
   %end;
+
+  %mf_abort(
+    iftrue=(&syscc ne 0),
+    msg=Cannot leave mfv_existfolder.sas with syscc=&syscc
+  )
 
 %mend mfv_existfolder;

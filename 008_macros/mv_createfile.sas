@@ -95,6 +95,11 @@
 %end;
 %else %let dbg=*;
 
+%mp_abort(
+  iftrue=(&syscc ne 0),
+  msg=Cannot enter &sysmacroname with syscc=&syscc
+)
+
 %local oauth_bearer;
 %if &grant_type=detect %then %do;
   %if %symexist(&access_token_var) %then %let grant_type=authorization_code;
@@ -172,6 +177,11 @@ run;
   ,mac=MV_CREATEFILE
   ,msg=%str(File &path/&name already exists and force=&force)
 )
+%mp_abort(
+  iftrue=(&syscc ne 0),
+  mac=MV_CREATEFILE182
+  msg=syscc=&syscc after mfv_getpathuri
+)
 
 %if %mf_isblank(&fileuri)=0 and &force=YES %then %do;
   proc http method="DELETE" url="&base_uri&fileuri" &oauth_bearer;
@@ -241,8 +251,8 @@ data &outds;
   end;
 run;
 
-%put &sysmacroname: &name created at %mfv_getpathuri(&path/&name);%put;
-%put    &base_uri/SASJobExecution?_file=&path/&name;%put;
+%put &sysmacroname: %trim(&base_uri)%mfv_getpathuri(&path/&name);
+%put /SASJobExecution?_file=&path/&name;%put;
 
 %if &mdebug=0 %then %do;
   /* clear refs */
@@ -250,5 +260,10 @@ run;
   filename &fref clear;
   libname &libref2 clear;
 %end;
+
+%mp_abort(
+  iftrue=(&syscc ne 0),
+  msg=Cannot leave &sysmacroname with syscc=&syscc
+)
 
 %mend mv_createfile;

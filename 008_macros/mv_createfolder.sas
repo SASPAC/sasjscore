@@ -46,6 +46,11 @@
 %end;
 %else %let dbg=*;
 
+%mp_abort(
+  iftrue=(&syscc ne 0),
+  msg=Cannot enter &sysmacroname with syscc=&syscc
+)
+
 %if %mfv_existfolder(&path)=1 %then %do;
   %&dbg.put &sysmacroname: &path already exists;
   data &outds;
@@ -55,6 +60,7 @@
   run;
   %return;
 %end;
+%mp_abort(iftrue=(&syscc ne 0),msg=syscc=&syscc when folder checking)
 
 %local oauth_bearer;
 %if &grant_type=detect %then %do;
@@ -108,6 +114,17 @@ options noquotelenmax;
       headers "Authorization"="Bearer &&&access_token_var";
   %end;
   run;
+  %if &SYS_PROCHTTP_STATUS_CODE=401 %then %do;
+    /* relates to: https://github.com/sasjs/core/issues/400 */
+    %put 401 thrown in &sysmacroname;
+    %put sleeping: %sysfunc(sleep(12,1)) secs - will try again;
+    proc http method='GET' out=&fname1 &oauth_bearer
+        url="&base_uri/folders/folders/@item?path=&newpath";
+    %if &grant_type=authorization_code %then %do;
+        headers "Authorization"="Bearer &&&access_token_var";
+    %end;
+    run;
+  %end;
   %local libref1;
   %let libref1=%mf_getuniquelibref();
   libname &libref1 JSON fileref=&fname1;
@@ -115,7 +132,7 @@ options noquotelenmax;
     iftrue=(
       &SYS_PROCHTTP_STATUS_CODE ne 200 and &SYS_PROCHTTP_STATUS_CODE ne 404
     )
-    ,mac=&sysmacroname
+    ,mac=mv_createfolder124
     ,msg=%str(&SYS_PROCHTTP_STATUS_CODE &SYS_PROCHTTP_STATUS_PHRASE)
   )
   %if &mdebug=1 %then %do;
@@ -164,7 +181,7 @@ options noquotelenmax;
                 'Content-Type'='application/vnd.sas.content.folder+json'
                 'Accept'='application/vnd.sas.content.folder+json';
     run;
-    %if &SYS_PROCHTTP_STATUS_CODE ne 200 %then %do;
+    %if &SYS_PROCHTTP_STATUS_CODE ne 201 %then %do;
       %put &=SYS_PROCHTTP_STATUS_CODE &=SYS_PROCHTTP_STATUS_PHRASE;
     %end;
     %mp_abort(iftrue=(&SYS_PROCHTTP_STATUS_CODE ne 201)
@@ -194,4 +211,8 @@ options noquotelenmax;
   filename &fname1 clear;
   libname &libref1 clear;
 %end;
+%mp_abort(
+  iftrue=(&syscc ne 0),
+  msg=Cannot leave &sysmacroname with syscc=&syscc
+)
 %mend mv_createfolder;
