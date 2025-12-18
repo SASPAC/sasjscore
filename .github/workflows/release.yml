@@ -14,5 +14,5 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           branch: main
           draft: false
-          version: 4.59.9
-          description: 'Version 4.59.9 of sasjs/core is now on SAS PACKAGES :ok_hand:'
+          version: 4.59.10
+          description: 'Version 4.59.10 of sasjs/core is now on SAS PACKAGES :ok_hand:'
