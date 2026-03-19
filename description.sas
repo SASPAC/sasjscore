@@ -1,7 +1,7 @@
 Type: Package                                                                   
 Package: SASjsCore                                                              
 Title: SAS Macros for Application Development                                   
-Version: 4.62.0
+Version: 4.62.1
 Author: Allan Bowe                                                              
 Maintainer: 4GL Ltd                                                             
 License: MIT                                                                    
