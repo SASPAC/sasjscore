@@ -35,11 +35,12 @@
   @param [in] desc= (0) The user provided test description
   @param [in] test= (ALL) The test to apply.  Valid values are:
     @li ALL - Test is a PASS if ALL columns exist in &inds
-    @li ANY - Test is a PASS if ANY of the columns exist in &inds
+    @li ANY - Test is a PASS if ANY of the columns exist in &inds - including
+      when all of them do
     @li NONE - Test is a PASS if NONE of the columns exist in &inds
   @param [out] outds= (work.test_results) The output dataset to contain the
   results.  If it does not exist, it will be created, with the following format:
-  |TEST_DESCRIPTION:$256|TEST_RESULT:$4|TEST_COMMENTS:$256|
+  |TEST_DESCRIPTION:$256|TEST_RESULT:$5|TEST_COMMENTS:$256|
   |---|---|---|
   |User Provided description|PASS|Dataset &inds contained ALL columns|
 
@@ -108,7 +109,7 @@
   %end;
 
   data;
-    length test_result $4 test_description $256 test_comments $256;
+    length test_result $5 test_description $256 test_comments $256;
     test_description=symget('desc');
     if test_description='0'
     then test_description="Testing &inds for existence of &test of: &cols";
@@ -121,7 +122,8 @@
     %end;
   %end;
   %else %if &test=ANY %then %do;
-    %if &result=SOME %then %do;
+    /* SOME or ALL - if every column exists then any of them does too */
+    %if &result ne NONE %then %do;
       test_result='PASS';
     %end;
   %end;
