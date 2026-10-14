@@ -5,7 +5,7 @@
 The SASjs Macro Core library is a component of the SASjs framework.             
                                                                                 
 SHA256 digest for the latest version of `SASjsCORE` is:                         
-F*438C399E17D73A46FF766EE648768ACAECF0A9401DFE3E8472F3B9AC25ABC87B
+F*13DF368A31D41AA6FD4BF41658F4020C4257E9610E86880D84E2111939198C70
                                                                                 
 [**Documentation for SASjsCORE**](https://core.sasjs.io "Documentation for SASjsCORE")                                                                          
                                                                                                                                                                 
