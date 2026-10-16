@@ -43,7 +43,6 @@
   <h4> SAS Macros </h4>
   @li ms_createfile.sas
   @li mf_getuser.sas
-  @li mf_getuniquename.sas
   @li mf_getuniquefileref.sas
   @li mp_abort.sas
 
@@ -632,11 +631,11 @@ data _null_;
   put '%macro mfs_httpheader(header_name ';
   put '  ,header_value ';
   put ')/*/STORE SOURCE*/; ';
-  put '%global sasjs_stpsrv_header_loc; ';
+  put '%global _sasjs_webout_headers; ';
   put '%local fref fid i; ';
   put ' ';
-  put '%if %sysfunc(filename(fref,&sasjs_stpsrv_header_loc)) ne 0 %then %do; ';
-  put '  %put &=fref &=sasjs_stpsrv_header_loc; ';
+  put '%if %sysfunc(filename(fref,&_sasjs_webout_headers)) ne 0 %then %do; ';
+  put '  %put &=fref &=_sasjs_webout_headers; ';
   put '  %put %str(ERR)OR: %sysfunc(sysmsg()); ';
   put '  %return; ';
   put '%end; ';
