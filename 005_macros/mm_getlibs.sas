@@ -14,7 +14,7 @@
     - LibraryRef
     - Engine
 
-  @warning The following filenames are created and then de-assigned:
+  @note The following filenames are created and then de-assigned:
 
       filename sxlemap clear;
       filename response clear;
@@ -42,7 +42,7 @@ data _null_;
   call symputx('flags',flags,'l');
 run;
 
-* use a temporary fileref to hold the response;
+/* use a temporary fileref to hold the response */
 filename response temp;
 /* get list of libraries */
 proc metadata in=
@@ -87,7 +87,6 @@ libname _XML_ xml xmlfileref=response xmlmap=sxlemap;
 proc sort data=_XML_.saslibrary out=&outds;
   by libraryname;
 run;
-
 
 /* clear references */
 filename sxlemap clear;

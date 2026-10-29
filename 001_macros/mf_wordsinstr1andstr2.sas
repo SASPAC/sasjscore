@@ -19,7 +19,7 @@
   @param [in] str1= () string containing words to extract
   @param [in] str2= () used to compare with the extract string
 
-  @warning CASE SENSITIVE!
+  @note CASE SENSITIVE!
 
   @version 9.2
   @author Allan Bowe

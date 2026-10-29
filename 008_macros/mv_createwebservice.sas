@@ -63,6 +63,7 @@ https://go.documentation.sas.com/?docsetId=calcontexts&docsetTarget=n1hjn8eobk5p
   @version VIYA V.03.04
   @author Allan Bowe, source: https://github.com/sasjs/core
 
+  @sasjslint {"maxLineLength": 128}
 **//*** HELP END ***/
 
 %macro mv_createwebservice(path=
@@ -117,7 +118,7 @@ https://go.documentation.sas.com/?docsetId=calcontexts&docsetTarget=n1hjn8eobk5p
 
 options noquotelenmax;
 
-* remove any trailing slash ;
+/* remove any trailing slash */
 %if "%substr(&path,%length(&path),1)" = "/" %then
   %let path=%substr(&path,1,%length(&path)-1);
 

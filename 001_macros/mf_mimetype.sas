@@ -12,6 +12,7 @@
 
   @version 9.2
   @author Allan Bowe
+  @sasjslint {"maxLineLength": 82}
 **//*** HELP END ***/
 
 %macro mf_mimetype(

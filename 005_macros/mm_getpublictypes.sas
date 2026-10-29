@@ -16,6 +16,7 @@
   @version 9.3
   @author Allan Bowe
 
+  @sasjslint {"maxLineLength": 115}
 **//*** HELP END ***/
 
 %macro mm_getpublictypes(

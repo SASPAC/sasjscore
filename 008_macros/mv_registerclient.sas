@@ -83,6 +83,7 @@
   @li mf_getuser.sas
   @li mp_abort.sas
 
+  @sasjslint {"maxLineLength": 82}
 **//*** HELP END ***/
 
 %macro mv_registerclient(client_id=

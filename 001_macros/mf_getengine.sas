@@ -17,7 +17,7 @@
   @return output returns the library engine (uppercase) for the FIRST library
     encountered.
 
-  @warning will only return the FIRST library engine - for concatenated
+  @note will only return the FIRST library engine - for concatenated
     libraries, with different engines, inconsistent results may be encountered.
 
   @version 9.2

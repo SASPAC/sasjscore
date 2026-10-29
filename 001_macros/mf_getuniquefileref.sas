@@ -33,6 +33,7 @@
 
   @version 9.2
   @author Allan Bowe
+  @sasjslint {"noBannedStrings": false}
 **//*** HELP END ***/
 
 %macro mf_getuniquefileref(prefix=_,maxtries=1000,lrecl=32767);

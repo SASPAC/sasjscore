@@ -14,7 +14,7 @@
 
   @returns outds  dataset containing all properties
 
-  @warning The following filenames are created and then de-assigned:
+  @note The following filenames are created and then de-assigned:
 
       filename __in clear;
       filename __out clear;

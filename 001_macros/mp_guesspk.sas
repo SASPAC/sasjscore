@@ -40,6 +40,7 @@
   @version 9.3
   @author Allan Bowe
 
+  @sasjslint {"maxLineLength": 90}
 **//*** HELP END ***/
 
 %macro mp_guesspk(baseds

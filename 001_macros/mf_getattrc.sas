@@ -14,6 +14,7 @@
 
   @version 9.2
   @author Allan Bowe
+  @sasjslint {"maxLineLength": 101}
 **//*** HELP END ***/
 
 %macro mf_getattrc(

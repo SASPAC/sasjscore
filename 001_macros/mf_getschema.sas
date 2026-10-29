@@ -12,7 +12,7 @@
 
   @return output returns the library schema for the FIRST library encountered
 
-  @warning will only return the FIRST library schema - for concatenated
+  @note will only return the FIRST library schema - for concatenated
     libraries, with different schemas, inconsistent results may be encountered.
 
   @version 9.2

@@ -37,6 +37,7 @@
   @li mv_deleteviyafolder.sas
   @li mv_getfoldermembers.test.sas
 
+  @sasjslint {"maxLineLength": 230}
 **//*** HELP END ***/
 
 %macro mv_getfoldermembers(root=/
